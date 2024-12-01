@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSurveyStore } from '../lib/survey-store'
 import { SurveyQuestion } from '../types/survey'
+import { getSurveyUrl } from '../utils/url'
 import {
   Dialog,
   DialogContent,
@@ -152,8 +153,12 @@ export function SurveyDashboard() {
                 <p className="text-gray-600 mb-4">{survey.description}</p>
               )}
               <div className="flex justify-between items-center">
-                <Button variant="outline" onClick={() => {}}>
-                  View Responses
+                <Button variant="outline" onClick={() => {
+                  const url = getSurveyUrl(survey.id);
+                  navigator.clipboard.writeText(url);
+                  alert('Survey link copied to clipboard!');
+                }}>
+                  Copy Link
                 </Button>
                 <Button
                   variant="destructive"
