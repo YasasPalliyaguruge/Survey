@@ -4,13 +4,10 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Survey/', 
+  base: '/Survey/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
-  },
-  optimizeDeps: {
-    exclude: ['lucide-react'],
   },
 });
