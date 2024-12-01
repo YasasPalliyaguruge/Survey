@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { CreateSurvey } from './pages/CreateSurvey';
 import SurveyForm from './components/SurveyForm';
@@ -30,10 +30,10 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Router>
         <AppContent />
-        <Toaster position="top-center" richColors />
+        <Toaster />
       </Router>
     </ThemeProvider>
   );

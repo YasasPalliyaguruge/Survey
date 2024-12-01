@@ -22,14 +22,18 @@ export default function SurveyForm() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    console.log('Survey ID from params:', id);
     if (!id) return;
     loadSurvey(id);
   }, [id]);
 
   const loadSurvey = async (surveyId: string) => {
+    console.log('Loading survey with ID:', surveyId);
     try {
       const data = await getSurveyById(surveyId);
+      console.log('Survey data:', data);
       if (!data) {
+        console.error('Survey not found');
         toast.error('Survey not found');
         navigate('/');
         return;
@@ -44,6 +48,7 @@ export default function SurveyForm() {
       });
       setAnswers(initialAnswers);
     } catch (error) {
+      console.error('Error loading survey:', error);
       toast.error('Failed to load survey');
       navigate('/');
     } finally {

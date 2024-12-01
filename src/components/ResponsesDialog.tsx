@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+  DialogDescription,
+} from './ui/dialog';
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from './ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
 import { getSurveyResponses } from '@/lib/supabase';
-import type { Survey, SurveyResponse, SurveyQuestion } from '@/types/survey';
+import type { SurveyResponse, SurveyQuestion } from '@/types/survey';
 import { Loader2, Download } from 'lucide-react';
 
 interface ResponsesDialogProps {
@@ -164,7 +165,7 @@ export function ResponsesDialog({ survey, open, onOpenChange }: ResponsesDialogP
               {responses.map((response) => (
                 <TableRow key={response.id}>
                   <TableCell className="whitespace-nowrap">
-                    {new Date(response.created_at).toLocaleString()}
+                    {format(new Date(response.created_at), 'MMM d, yyyy h:mm a')}
                   </TableCell>
                   {survey.questions.map((question) => (
                     <TableCell key={question.id}>
