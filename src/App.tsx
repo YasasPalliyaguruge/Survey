@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { CreateSurvey } from './pages/CreateSurvey';
 import SurveyForm from './components/SurveyForm';
