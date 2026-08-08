@@ -12,6 +12,7 @@ Survey is a React/Vite application for creating surveys, sharing a public respon
 2. Share the generated `/survey/:id` route.
 3. Collect responses through the public form.
 4. Review response statistics and individual submissions from the dashboard.
+5. Export response data as CSV or Excel when needed.
 
 ## Technology
 
@@ -21,6 +22,7 @@ Survey is a React/Vite application for creating surveys, sharing a public respon
 - Supabase/PostgreSQL
 - Tailwind CSS and Radix UI
 - Chart.js and Recharts
+- SheetJS (`xlsx`) for Excel export
 
 ## Local setup
 
@@ -48,7 +50,13 @@ npm run lint
 npm run build
 ```
 
-The same checks run in GitHub Actions for pull requests and pushes to `main`.
+GitHub Actions performs a clean install, a production-dependency audit, linting and the production build for pull requests and pushes to `main`.
+
+The recruiter-readiness branch removed unused Firebase, Firestore, TanStack Table and React Router v5 type dependencies and regenerated the lockfile through npm. A clean CI install now audits 478 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
+
+A major React Router migration is intentionally not being forced solely to clear the audit. This application uses browser/declarative routing with internal application destinations, so a major-version migration should be handled with separate navigation regression testing.
+
+Excel export remains an implemented feature. The application generates spreadsheets from already-loaded survey responses and does not accept spreadsheet uploads. CSV and Excel exports neutralise cells that could otherwise be interpreted as spreadsheet formulas; CSV output also escapes commas, quotes and line breaks correctly.
 
 ## Main routes
 
@@ -60,6 +68,8 @@ The same checks run in GitHub Actions for pull requests and pushes to `main`.
 
 The committed Supabase migration uses permissive demonstration policies because the project does not currently include authentication or survey ownership. Do not deploy those policies with real or confidential data. See [SECURITY.md](SECURITY.md) for the production requirements and recommended authorization model.
 
+The dependency audit is tracked separately in issue #3. The remaining production findings are non-critical, but they should still be reviewed before describing the application as production-ready.
+
 ## Deployment
 
 `npm run deploy` publishes the built `dist` directory through `gh-pages`. Confirm the repository Pages configuration, application base URL, Supabase allowed origins, and production RLS policies before publishing.
@@ -68,5 +78,9 @@ The committed Supabase migration uses permissive demonstration policies because 
 
 - No user authentication or ownership model
 - Demonstration-only Row Level Security policies
+- Remaining non-critical production dependency advisories tracked in issue #3
+- The npm-distributed `xlsx` dependency currently has no npm audit fix for its remaining advisory
 - No automated browser or integration tests yet
 - No rate limiting for anonymous survey responses
+- The production bundle is relatively large and would benefit from code splitting
+- Legacy TypeScript/React lint warnings remain non-blocking technical debt
