@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Chart } from './ui/charts';
 import type { Survey, SurveyResponse } from '@/types/survey';
@@ -9,38 +9,31 @@ interface SurveyStatsProps {
 }
 
 export function SurveyStats({ survey, responses }: SurveyStatsProps) {
-  const [stats, setStats] = useState<Record<string, Record<string, number>>>({});
-
-  useEffect(() => {
-    calculateStats();
-  }, [responses]);
-
-  const calculateStats = () => {
-    const newStats: Record<string, Record<string, number>> = {};
+  const stats = useMemo(() => {
+    const calculated: Record<string, Record<string, number>> = {};
 
     survey.questions.forEach((question) => {
-      if (question.type === 'radio' || question.type === 'checkbox') {
-        const answerCounts: Record<string, number> = {};
-        
-        responses.forEach((response) => {
-          const answer = response.answers[question.id];
-          if (Array.isArray(answer)) {
-            answer.forEach((option) => {
-              answerCounts[option] = (answerCounts[option] || 0) + 1;
-            });
-          } else if (answer) {
-            answerCounts[answer] = (answerCounts[answer] || 0) + 1;
-          }
-        });
+      if (question.type !== 'radio' && question.type !== 'checkbox') return;
 
-        if (Object.keys(answerCounts).length > 0) {
-          newStats[question.id] = answerCounts;
+      const answerCounts: Record<string, number> = {};
+      responses.forEach((response) => {
+        const answer = response.answers[question.id];
+        if (Array.isArray(answer)) {
+          answer.forEach((option) => {
+            answerCounts[option] = (answerCounts[option] || 0) + 1;
+          });
+        } else if (typeof answer === 'string' && answer) {
+          answerCounts[answer] = (answerCounts[answer] || 0) + 1;
         }
+      });
+
+      if (Object.keys(answerCounts).length > 0) {
+        calculated[question.id] = answerCounts;
       }
     });
 
-    setStats(newStats);
-  };
+    return calculated;
+  }, [responses, survey.questions]);
 
   const getChartData = (questionId: string) => {
     const data = stats[questionId] || {};
@@ -70,7 +63,7 @@ export function SurveyStats({ survey, responses }: SurveyStatsProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       {survey.questions.map((question) => {
         if (question.type !== 'radio' && question.type !== 'checkbox') return null;
         if (!stats[question.id]) return null;
