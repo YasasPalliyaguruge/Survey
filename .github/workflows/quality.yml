@@ -35,10 +35,15 @@ jobs:
         run: npm run build
 
   dependency-cleanup-candidate:
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/recruiter-readiness'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Check out repository
+      - name: Check out pull-request branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -71,12 +76,14 @@ jobs:
       - name: Build candidate
         run: npm run build
 
-      - name: Upload candidate package files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: survey-dependency-cleanup-candidate
-          path: |
-            package.json
-            package-lock.json
-          if-no-files-found: error
+      - name: Commit validated package files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Candidate package files already match the branch."
+            exit 0
+          fi
+          git commit -m "Reduce dependency vulnerability surface"
+          git push origin "HEAD:${{ github.head_ref }}"
