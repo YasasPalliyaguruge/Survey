@@ -22,33 +22,27 @@ export default function SurveyForm() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    console.log('Survey ID from params:', id);
     if (!id) return;
-    loadSurvey(id);
+    void loadSurvey(id);
   }, [id]);
 
   const loadSurvey = async (surveyId: string) => {
-    console.log('Loading survey with ID:', surveyId);
     try {
       const data = await getSurveyById(surveyId);
-      console.log('Survey data:', data);
       if (!data) {
-        console.error('Survey not found');
         toast.error('Survey not found');
         navigate('/');
         return;
       }
       setSurvey(data);
-      // Initialize answers for checkbox questions
       const initialAnswers: Record<string, any> = {};
-      data.questions.forEach((q) => {
-        if (q.type === 'checkbox') {
-          initialAnswers[q.id] = [];
+      data.questions.forEach((question) => {
+        if (question.type === 'checkbox') {
+          initialAnswers[question.id] = [];
         }
       });
       setAnswers(initialAnswers);
-    } catch (error) {
-      console.error('Error loading survey:', error);
+    } catch {
       toast.error('Failed to load survey');
       navigate('/');
     } finally {
@@ -56,13 +50,12 @@ export default function SurveyForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!survey || !id) return;
 
-    // Validate required fields
     const missingRequired = survey.questions.some(
-      (q) => q.required && !answers[q.id]
+      (question) => question.required && !answers[question.id],
     );
     if (missingRequired) {
       toast.error('Please fill in all required fields');
@@ -78,7 +71,7 @@ export default function SurveyForm() {
       });
       setSubmitted(true);
       toast.success('Thank you for your response!');
-    } catch (error) {
+    } catch {
       toast.error('Failed to submit survey');
     } finally {
       setSubmitting(false);
@@ -86,16 +79,16 @@ export default function SurveyForm() {
   };
 
   const handleAnswerChange = (questionId: string, value: any) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+    setAnswers((previous) => ({ ...previous, [questionId]: value }));
   };
 
   const handleCheckboxChange = (questionId: string, option: string) => {
-    setAnswers((prev) => {
-      const currentAnswers = prev[questionId] || [];
+    setAnswers((previous) => {
+      const currentAnswers = previous[questionId] || [];
       const newAnswers = currentAnswers.includes(option)
-        ? currentAnswers.filter((a: string) => a !== option)
+        ? currentAnswers.filter((answer: string) => answer !== option)
         : [...currentAnswers, option];
-      return { ...prev, [questionId]: newAnswers };
+      return { ...previous, [questionId]: newAnswers };
     });
   };
 
@@ -145,7 +138,7 @@ export default function SurveyForm() {
               <div key={question.id} className="space-y-2">
                 <Label>
                   {question.text}
-                  {question.required && <span className="text-red-500 ml-1">*</span>}
+                  {question.required && <span className="ml-1 text-red-500">*</span>}
                 </Label>
 
                 {question.type === 'text' && (
@@ -153,7 +146,7 @@ export default function SurveyForm() {
                     type="text"
                     required={question.required}
                     value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                    onChange={(event) => handleAnswerChange(question.id, event.target.value)}
                   />
                 )}
 
@@ -161,7 +154,7 @@ export default function SurveyForm() {
                   <Textarea
                     required={question.required}
                     value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                    onChange={(event) => handleAnswerChange(question.id, event.target.value)}
                   />
                 )}
 
