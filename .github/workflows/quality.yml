@@ -33,3 +33,50 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  dependency-cleanup-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install current dependency tree
+        run: npm ci
+
+      - name: Remove unused direct dependencies
+        run: npm uninstall firebase @firebase/firestore @tanstack/react-table @types/react-router-dom --package-lock-only --ignore-scripts
+
+      - name: Apply compatible production fixes
+        continue-on-error: true
+        run: npm audit fix --package-lock-only --omit=dev --ignore-scripts
+
+      - name: Reinstall from candidate lockfile
+        run: |
+          rm -rf node_modules
+          npm ci
+
+      - name: Audit candidate production tree
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Lint candidate
+        run: npm run lint
+
+      - name: Build candidate
+        run: npm run build
+
+      - name: Upload candidate package files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: survey-dependency-cleanup-candidate
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
