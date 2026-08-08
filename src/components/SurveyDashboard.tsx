@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { useSurveyStore } from '../lib/survey-store'
-import { SurveyQuestion } from '../types/survey'
-import { getSurveyUrl } from '../utils/url'
+import { useEffect, useState } from 'react';
+import { useSurveyStore } from '../lib/survey-store';
+import type { QuestionType, SurveyQuestion } from '../types/survey';
+import { getSurveyUrl } from '../utils/url';
 import {
   Dialog,
   DialogContent,
@@ -9,160 +9,147 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './ui/dialog'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Textarea } from './ui/textarea'
-import { Label } from './ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { Switch } from './ui/switch'
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Switch } from './ui/switch';
 
 interface NewQuestion extends Partial<SurveyQuestion> {
   optionsText: string;
 }
 
+const isQuestionType = (value: string): value is QuestionType =>
+  value === 'text' || value === 'textarea' || value === 'radio' || value === 'checkbox';
+
 export function SurveyDashboard() {
-  const { surveys, createSurvey, deleteSurvey, fetchSurveys, loading, error } = useSurveyStore()
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const { surveys, createSurvey, deleteSurvey, fetchSurveys, loading, error } = useSurveyStore();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [newQuestion, setNewQuestion] = useState<NewQuestion>({
     type: 'text',
     text: '',
     required: false,
     optionsText: '',
-  })
-  const [questions, setQuestions] = useState<SurveyQuestion[]>([])
+  });
+  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
 
-  // Debug: Log surveys whenever they change
   useEffect(() => {
-    console.log('Current surveys:', surveys)
-  }, [surveys])
-
-  // Fetch surveys on mount
-  useEffect(() => {
-    console.log('Fetching surveys...')
-    fetchSurveys()
-  }, [fetchSurveys])
+    void fetchSurveys();
+  }, [fetchSurveys]);
 
   const handleCreateSurvey = async () => {
     if (!title.trim()) {
-      alert('Please enter a title')
-      return
+      alert('Please enter a title');
+      return;
     }
 
     if (questions.length === 0) {
-      alert('Please add at least one question')
-      return
+      alert('Please add at least one question');
+      return;
     }
 
     try {
-      console.log('Creating survey with:', {
-        title: title.trim(),
-        description: description.trim(),
-        questions,
-      })
-
       await createSurvey({
         title: title.trim(),
         description: description.trim(),
         questions,
-      })
+      });
 
-      console.log('Survey created successfully')
-
-      // Reset form
-      setIsCreateDialogOpen(false)
-      setTitle('')
-      setDescription('')
-      setQuestions([])
-    } catch (error) {
-      console.error('Error creating survey:', error)
-      alert(error instanceof Error ? error.message : 'Failed to create survey')
+      setIsCreateDialogOpen(false);
+      setTitle('');
+      setDescription('');
+      setQuestions([]);
+    } catch (createError) {
+      alert(createError instanceof Error ? createError.message : 'Failed to create survey');
     }
-  }
+  };
 
   const handleAddQuestion = () => {
     if (!newQuestion.text) {
-      alert('Please enter question text')
-      return
+      alert('Please enter question text');
+      return;
     }
 
     if (
       (newQuestion.type === 'radio' || newQuestion.type === 'checkbox') &&
       (!newQuestion.optionsText || newQuestion.optionsText.trim() === '')
     ) {
-      alert('Please enter options for radio/checkbox question')
-      return
+      alert('Please enter options for radio/checkbox question');
+      return;
     }
 
     const question: SurveyQuestion = {
-      id: Math.random().toString(),
+      id: crypto.randomUUID(),
       text: newQuestion.text,
-      type: newQuestion.type as 'text' | 'textarea' | 'radio' | 'checkbox',
+      type: newQuestion.type ?? 'text',
       required: newQuestion.required || false,
       options:
         newQuestion.type === 'radio' || newQuestion.type === 'checkbox'
-          ? newQuestion.optionsText.split(',').map((o) => o.trim())
+          ? newQuestion.optionsText.split(',').map((option) => option.trim()).filter(Boolean)
           : undefined,
-    }
+    };
 
-    console.log('Adding question:', question)
-    setQuestions([...questions, question])
+    setQuestions((current) => [...current, question]);
     setNewQuestion({
       type: 'text',
       text: '',
       required: false,
       optionsText: '',
-    })
-  }
+    });
+  };
 
   const handleDeleteSurvey = async (id: string) => {
     try {
-      console.log('Deleting survey:', id)
-      await deleteSurvey(id)
-      console.log('Survey deleted successfully')
-    } catch (error) {
-      console.error('Error deleting survey:', error)
-      alert(error instanceof Error ? error.message : 'Failed to delete survey')
+      await deleteSurvey(id);
+    } catch (deleteError) {
+      alert(deleteError instanceof Error ? deleteError.message : 'Failed to delete survey');
     }
-  }
+  };
+
+  const handleCopyLink = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(getSurveyUrl(id));
+      alert('Survey link copied to clipboard!');
+    } catch {
+      alert('Could not copy the survey link.');
+    }
+  };
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Surveys</h1>
         <Button onClick={() => setIsCreateDialogOpen(true)}>Create Survey</Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
-          <div className="col-span-full text-center py-8">Loading surveys...</div>
+          <div className="col-span-full py-8 text-center">Loading surveys...</div>
         ) : error ? (
-          <div className="col-span-full text-center py-8 text-red-500">{error}</div>
+          <div className="col-span-full py-8 text-center text-red-500">{error}</div>
         ) : surveys.length === 0 ? (
-          <div className="col-span-full text-center py-8">No surveys yet. Create one to get started!</div>
+          <div className="col-span-full py-8 text-center">No surveys yet. Create one to get started!</div>
         ) : (
           surveys.map((survey) => (
             <div
               key={survey.id}
-              className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="rounded-lg border p-4 transition-shadow hover:shadow-md"
             >
-              <h2 className="text-xl font-semibold mb-2">{survey.title}</h2>
+              <h2 className="mb-2 text-xl font-semibold">{survey.title}</h2>
               {survey.description && (
-                <p className="text-gray-600 mb-4">{survey.description}</p>
+                <p className="mb-4 text-gray-600">{survey.description}</p>
               )}
-              <div className="flex justify-between items-center">
-                <Button variant="outline" onClick={() => {
-                  const url = getSurveyUrl(survey.id);
-                  navigator.clipboard.writeText(url);
-                  alert('Survey link copied to clipboard!');
-                }}>
+              <div className="flex items-center justify-between">
+                <Button variant="outline" onClick={() => void handleCopyLink(survey.id)}>
                   Copy Link
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={() => handleDeleteSurvey(survey.id)}
+                  onClick={() => void handleDeleteSurvey(survey.id)}
                 >
                   Delete
                 </Button>
@@ -186,7 +173,7 @@ export function SurveyDashboard() {
               <Input
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="Survey Title"
               />
             </div>
@@ -195,7 +182,7 @@ export function SurveyDashboard() {
               <Textarea
                 id="description"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(event) => setDescription(event.target.value)}
                 placeholder="Survey Description"
               />
             </div>
@@ -210,7 +197,7 @@ export function SurveyDashboard() {
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      setQuestions(questions.filter((q) => q.id !== question.id))
+                      setQuestions((current) => current.filter((item) => item.id !== question.id))
                     }
                   >
                     Remove
@@ -222,9 +209,11 @@ export function SurveyDashboard() {
                   <Label>Question Type</Label>
                   <Select
                     value={newQuestion.type}
-                    onValueChange={(value: any) =>
-                      setNewQuestion({ ...newQuestion, type: value })
-                    }
+                    onValueChange={(value) => {
+                      if (isQuestionType(value)) {
+                        setNewQuestion((current) => ({ ...current, type: value }));
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -241,23 +230,22 @@ export function SurveyDashboard() {
                   <Label>Question Text</Label>
                   <Input
                     value={newQuestion.text}
-                    onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, text: e.target.value })
+                    onChange={(event) =>
+                      setNewQuestion((current) => ({ ...current, text: event.target.value }))
                     }
                     placeholder="Enter your question"
                   />
                 </div>
-                {(newQuestion.type === 'radio' ||
-                  newQuestion.type === 'checkbox') && (
+                {(newQuestion.type === 'radio' || newQuestion.type === 'checkbox') && (
                   <div className="grid gap-2">
                     <Label>Options (comma-separated)</Label>
                     <Input
                       value={newQuestion.optionsText}
-                      onChange={(e) =>
-                        setNewQuestion({
-                          ...newQuestion,
-                          optionsText: e.target.value,
-                        })
+                      onChange={(event) =>
+                        setNewQuestion((current) => ({
+                          ...current,
+                          optionsText: event.target.value,
+                        }))
                       }
                       placeholder="Option 1, Option 2, Option 3"
                     />
@@ -267,7 +255,7 @@ export function SurveyDashboard() {
                   <Switch
                     checked={newQuestion.required}
                     onCheckedChange={(checked) =>
-                      setNewQuestion({ ...newQuestion, required: checked })
+                      setNewQuestion((current) => ({ ...current, required: checked }))
                     }
                   />
                   <Label>Required</Label>
@@ -280,10 +268,10 @@ export function SurveyDashboard() {
             <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateSurvey}>Create Survey</Button>
+            <Button onClick={() => void handleCreateSurvey()}>Create Survey</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
