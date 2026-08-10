@@ -11,8 +11,8 @@ import {
   Title,
   Tooltip,
   Legend,
-  ChartData,
-  ChartOptions,
+  type ChartData,
+  type ChartOptions,
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 
@@ -28,24 +28,33 @@ ChartJS.register(
   Legend
 );
 
-type ChartType = 'line' | 'bar' | 'pie';
+type ChartProps =
+  | {
+      type: 'line';
+      data: ChartData<'line'>;
+      options?: ChartOptions<'line'>;
+    }
+  | {
+      type: 'bar';
+      data: ChartData<'bar'>;
+      options?: ChartOptions<'bar'>;
+    }
+  | {
+      type: 'pie';
+      data: ChartData<'pie'>;
+      options?: ChartOptions<'pie'>;
+    };
 
-interface ChartProps {
-  data: ChartData<ChartType>;
-  options?: ChartOptions<ChartType>;
-  type: ChartType;
-}
-
-export function Chart({ data, options, type }: ChartProps) {
-  const ChartComponent = {
-    line: Line,
-    bar: Bar,
-    pie: Pie,
-  }[type] as any;
-
+export function Chart(props: ChartProps) {
   return (
     <div className="w-full h-full">
-      <ChartComponent data={data} options={options} />
+      {props.type === 'line' ? (
+        <Line data={props.data} options={props.options} />
+      ) : props.type === 'bar' ? (
+        <Bar data={props.data} options={props.options} />
+      ) : (
+        <Pie data={props.data} options={props.options} />
+      )}
     </div>
   );
 }

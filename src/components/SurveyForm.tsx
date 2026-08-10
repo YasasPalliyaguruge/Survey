@@ -9,8 +9,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getSurveyById, submitResponse } from '@/lib/supabase';
-import type { Survey } from '@/types/survey';
+import type { Survey, SurveyAnswer } from '@/types/survey';
 import { Loader2 } from 'lucide-react';
+
+const hasAnswer = (answer: SurveyAnswer | undefined): boolean => {
+  if (Array.isArray(answer)) return answer.length > 0;
+  return typeof answer === 'string' && answer.trim().length > 0;
+};
 
 export default function SurveyForm() {
   const { id } = useParams<{ id: string }>();
@@ -18,51 +23,57 @@ export default function SurveyForm() {
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, SurveyAnswer>>({});
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    console.log('Survey ID from params:', id);
-    if (!id) return;
-    loadSurvey(id);
-  }, [id]);
-
-  const loadSurvey = async (surveyId: string) => {
-    console.log('Loading survey with ID:', surveyId);
-    try {
-      const data = await getSurveyById(surveyId);
-      console.log('Survey data:', data);
-      if (!data) {
-        console.error('Survey not found');
-        toast.error('Survey not found');
-        navigate('/');
-        return;
-      }
-      setSurvey(data);
-      // Initialize answers for checkbox questions
-      const initialAnswers: Record<string, any> = {};
-      data.questions.forEach((q) => {
-        if (q.type === 'checkbox') {
-          initialAnswers[q.id] = [];
-        }
-      });
-      setAnswers(initialAnswers);
-    } catch (error) {
-      console.error('Error loading survey:', error);
-      toast.error('Failed to load survey');
-      navigate('/');
-    } finally {
+    if (!id) {
       setLoading(false);
+      return;
     }
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    let active = true;
+
+    const loadSurvey = async () => {
+      try {
+        const data = await getSurveyById(id);
+        if (!active) return;
+
+        if (!data) {
+          toast.error('Survey not found');
+          navigate('/');
+          return;
+        }
+
+        setSurvey(data);
+        const initialAnswers: Record<string, SurveyAnswer> = {};
+        data.questions.forEach((question) => {
+          if (question.type === 'checkbox') {
+            initialAnswers[question.id] = [];
+          }
+        });
+        setAnswers(initialAnswers);
+      } catch {
+        if (!active) return;
+        toast.error('Failed to load survey');
+        navigate('/');
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadSurvey();
+    return () => {
+      active = false;
+    };
+  }, [id, navigate]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!survey || !id) return;
 
-    // Validate required fields
     const missingRequired = survey.questions.some(
-      (q) => q.required && !answers[q.id]
+      (question) => question.required && !hasAnswer(answers[question.id]),
     );
     if (missingRequired) {
       toast.error('Please fill in all required fields');
@@ -78,24 +89,25 @@ export default function SurveyForm() {
       });
       setSubmitted(true);
       toast.success('Thank you for your response!');
-    } catch (error) {
+    } catch {
       toast.error('Failed to submit survey');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleAnswerChange = (questionId: string, value: any) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  const handleAnswerChange = (questionId: string, value: SurveyAnswer) => {
+    setAnswers((previous) => ({ ...previous, [questionId]: value }));
   };
 
   const handleCheckboxChange = (questionId: string, option: string) => {
-    setAnswers((prev) => {
-      const currentAnswers = prev[questionId] || [];
+    setAnswers((previous) => {
+      const existing = previous[questionId];
+      const currentAnswers = Array.isArray(existing) ? existing : [];
       const newAnswers = currentAnswers.includes(option)
-        ? currentAnswers.filter((a: string) => a !== option)
+        ? currentAnswers.filter((answer) => answer !== option)
         : [...currentAnswers, option];
-      return { ...prev, [questionId]: newAnswers };
+      return { ...previous, [questionId]: newAnswers };
     });
   };
 
@@ -141,60 +153,66 @@ export default function SurveyForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {survey.questions.map((question) => (
-              <div key={question.id} className="space-y-2">
-                <Label>
-                  {question.text}
-                  {question.required && <span className="text-red-500 ml-1">*</span>}
-                </Label>
+            {survey.questions.map((question) => {
+              const answer = answers[question.id];
+              const textAnswer = typeof answer === 'string' ? answer : '';
+              const checkboxAnswers = Array.isArray(answer) ? answer : [];
 
-                {question.type === 'text' && (
-                  <Input
-                    type="text"
-                    required={question.required}
-                    value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  />
-                )}
+              return (
+                <div key={question.id} className="space-y-2">
+                  <Label>
+                    {question.text}
+                    {question.required && <span className="ml-1 text-red-500">*</span>}
+                  </Label>
 
-                {question.type === 'textarea' && (
-                  <Textarea
-                    required={question.required}
-                    value={answers[question.id] || ''}
-                    onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                  />
-                )}
+                  {question.type === 'text' && (
+                    <Input
+                      type="text"
+                      required={question.required}
+                      value={textAnswer}
+                      onChange={(event) => handleAnswerChange(question.id, event.target.value)}
+                    />
+                  )}
 
-                {question.type === 'radio' && question.options && (
-                  <RadioGroup
-                    value={answers[question.id] || ''}
-                    onValueChange={(value) => handleAnswerChange(question.id, value)}
-                  >
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option} id={`${question.id}-${option}`} />
-                        <Label htmlFor={`${question.id}-${option}`}>{option}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                )}
+                  {question.type === 'textarea' && (
+                    <Textarea
+                      required={question.required}
+                      value={textAnswer}
+                      onChange={(event) => handleAnswerChange(question.id, event.target.value)}
+                    />
+                  )}
 
-                {question.type === 'checkbox' && question.options && (
-                  <div className="space-y-2">
-                    {question.options.map((option) => (
-                      <div key={option} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${question.id}-${option}`}
-                          checked={(answers[question.id] || []).includes(option)}
-                          onCheckedChange={() => handleCheckboxChange(question.id, option)}
-                        />
-                        <Label htmlFor={`${question.id}-${option}`}>{option}</Label>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {question.type === 'radio' && question.options && (
+                    <RadioGroup
+                      value={textAnswer}
+                      onValueChange={(value) => handleAnswerChange(question.id, value)}
+                    >
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`${question.id}-${option}`} />
+                          <Label htmlFor={`${question.id}-${option}`}>{option}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  )}
+
+                  {question.type === 'checkbox' && question.options && (
+                    <div className="space-y-2">
+                      {question.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`${question.id}-${option}`}
+                            checked={checkboxAnswers.includes(option)}
+                            onCheckedChange={() => handleCheckboxChange(question.id, option)}
+                          />
+                          <Label htmlFor={`${question.id}-${option}`}>{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             <Button type="submit" disabled={submitting} className="w-full">
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

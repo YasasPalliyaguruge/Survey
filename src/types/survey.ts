@@ -1,4 +1,5 @@
 export type QuestionType = 'text' | 'textarea' | 'radio' | 'checkbox';
+export type SurveyAnswer = string | string[];
 
 export interface SurveyQuestion {
   id: string;
@@ -22,7 +23,7 @@ export interface SurveyResponse {
   id: string;
   survey_id: string;
   respondent_id: string;
-  answers: Record<string, any>;
+  answers: Record<string, SurveyAnswer>;
   created_at: string;
   updated_at: string;
 }
@@ -30,5 +31,5 @@ export interface SurveyResponse {
 export interface SurveyResponseInput {
   survey_id: string;
   respondent_id: string;
-  answers: Record<string, any>;
+  answers: Record<string, SurveyAnswer>;
 }
