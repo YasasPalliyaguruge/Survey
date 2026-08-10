@@ -54,9 +54,13 @@ GitHub Actions performs a clean install, a production-dependency audit, linting 
 
 The recruiter-readiness branch removed unused Firebase, Firestore, TanStack Table and React Router v5 type dependencies and regenerated the lockfile through npm. A clean CI install now audits 478 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
 
+Lint now completes with 0 errors and 7 non-blocking Fast Refresh warnings. Explicit `any` warnings in the shared chart wrapper and legacy SQLite abstraction were removed with concrete TypeScript/sql.js types.
+
 A major React Router migration is intentionally not being forced solely to clear the audit. This application uses browser/declarative routing with internal application destinations, so a major-version migration should be handled with separate navigation regression testing.
 
-Excel export remains an implemented feature. The application generates spreadsheets from already-loaded survey responses and does not accept spreadsheet uploads. CSV and Excel exports neutralise cells that could otherwise be interpreted as spreadsheet formulas; CSV output also escapes commas, quotes and line breaks correctly.
+Excel export remains an implemented feature. The application generates spreadsheets from already-loaded survey responses and does not accept spreadsheet uploads. CSV and Excel exports neutralise cells that could otherwise be interpreted as spreadsheet formulas; CSV output also escapes commas, quotes and line breaks correctly. The `xlsx` package is lazy-loaded only when Excel export is requested, so its code and advisory-bearing dependency are not part of the initial application chunk. This reduces startup cost but does not resolve the underlying `xlsx` advisory.
+
+The main route bodies are also lazy-loaded. The verified production build now emits an initial application chunk of about 310 kB (99 kB gzip), separate Home/CreateSurvey/SurveyForm chunks, a separate Supabase chunk, and an on-demand `xlsx` chunk of about 429 kB (143 kB gzip). No generated JavaScript chunk exceeds Vite's 500 kB warning threshold.
 
 ## Main routes
 
@@ -82,5 +86,4 @@ The dependency audit is tracked separately in issue #3. The remaining production
 - The npm-distributed `xlsx` dependency currently has no npm audit fix for its remaining advisory
 - No automated browser or integration tests yet
 - No rate limiting for anonymous survey responses
-- The production bundle is relatively large and would benefit from code splitting
-- Legacy TypeScript/React lint warnings remain non-blocking technical debt
+- Seven non-blocking Fast Refresh lint warnings remain in shared component/provider modules
