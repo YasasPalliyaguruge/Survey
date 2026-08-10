@@ -21,7 +21,7 @@ Survey is a React/Vite application for creating surveys, sharing a public respon
 - React Router
 - Supabase/PostgreSQL
 - Tailwind CSS and Radix UI
-- Chart.js and Recharts
+- Chart.js for response statistics
 - SheetJS (`xlsx`) for Excel export
 
 ## Local setup
@@ -52,15 +52,17 @@ npm run build
 
 GitHub Actions performs a clean install, a production-dependency audit, linting and the production build for pull requests and pushes to `main`.
 
-The recruiter-readiness branch removed unused Firebase, Firestore, TanStack Table, React Router v5 type, `sql.js`, and `@types/sql.js` dependencies and regenerated the lockfile through npm. The unused legacy SQLite abstraction was also removed. A clean CI install now audits 475 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
+The recruiter-readiness branch removed unused Firebase, Firestore, TanStack Table, React Router v5 type, `sql.js`, `@types/sql.js`, and Recharts dependencies and regenerated the lockfile through npm. The unused legacy SQLite abstraction and unused Recharts UI helper were also removed. A clean CI install now audits 441 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
 
-Lint now completes with 0 errors and 7 non-blocking Fast Refresh warnings. Explicit `any` warnings were removed from the shared chart wrapper before the unused legacy SQLite path was deleted.
+The Browserslist database was refreshed through its official lockfile updater, and the CI workflow now uses the current GitHub Actions runtimes while retaining Node 20 as the project validation target.
+
+Lint now completes with 0 errors and 7 non-blocking Fast Refresh warnings. Explicit `any` warnings were removed from the active shared Chart.js wrapper before the unused legacy SQLite path was deleted.
 
 A major React Router migration is intentionally not being forced solely to clear the audit. This application uses browser/declarative routing with internal application destinations, so a major-version migration should be handled with separate navigation regression testing.
 
 Excel export remains an implemented feature. The application generates spreadsheets from already-loaded survey responses and does not accept spreadsheet uploads. CSV and Excel exports neutralise cells that could otherwise be interpreted as spreadsheet formulas; CSV output also escapes commas, quotes and line breaks correctly. The `xlsx` package is lazy-loaded only when Excel export is requested, so its code and advisory-bearing dependency are not part of the initial application chunk. This reduces startup cost but does not resolve the underlying `xlsx` advisory.
 
-The main route bodies are also lazy-loaded. The verified production build now emits an initial application chunk of about 310 kB (99 kB gzip), separate Home/CreateSurvey/SurveyForm chunks, a separate Supabase chunk, and an on-demand `xlsx` chunk of about 429 kB (143 kB gzip). No generated JavaScript chunk exceeds Vite's 500 kB warning threshold.
+The main route bodies are also lazy-loaded. The verified production build emits an initial application chunk of about 310 kB (99 kB gzip), separate Home/CreateSurvey/SurveyForm chunks, a separate Supabase chunk, and an on-demand `xlsx` chunk of about 429 kB (143 kB gzip). No generated JavaScript chunk exceeds Vite's 500 kB warning threshold.
 
 ## Main routes
 
