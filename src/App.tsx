@@ -1,10 +1,22 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { CreateSurvey } from './pages/CreateSurvey';
-import SurveyForm from './components/SurveyForm';
-import Home from './pages/Home';
 import { ThemeProvider } from './components/theme-provider';
 import { Header } from './components/Header';
+
+const Home = lazy(() => import('./pages/Home'));
+const SurveyForm = lazy(() => import('./components/SurveyForm'));
+const CreateSurvey = lazy(() =>
+  import('./pages/CreateSurvey').then((module) => ({ default: module.CreateSurvey })),
+);
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground" role="status">
+      Loading…
+    </div>
+  );
+}
 
 function AppContent() {
   const location = useLocation();
@@ -16,11 +28,13 @@ function AppContent() {
         {showHeader && <Header />}
         <main className="flex-1">
           <div className="container mx-auto py-6">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/create" element={<CreateSurvey />} />
-              <Route path="/survey/:id" element={<SurveyForm />} />
-            </Routes>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/create" element={<CreateSurvey />} />
+                <Route path="/survey/:id" element={<SurveyForm />} />
+              </Routes>
+            </Suspense>
           </div>
         </main>
       </div>
