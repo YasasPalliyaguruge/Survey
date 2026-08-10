@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -120,8 +119,9 @@ export function ResponsesDialog({ survey, open, onOpenChange }: ResponsesDialogP
     }
   };
 
-  const downloadExcel = () => {
+  const downloadExcel = async () => {
     try {
+      const XLSX = await import('xlsx');
       const data = prepareResponsesData().map((row) =>
         row.map(neutralizeSpreadsheetFormula),
       );
@@ -160,7 +160,7 @@ export function ResponsesDialog({ survey, open, onOpenChange }: ResponsesDialogP
               <DropdownMenuItem onClick={downloadCSV}>
                 Download as CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={downloadExcel}>
+              <DropdownMenuItem onClick={() => void downloadExcel()}>
                 Download as Excel
               </DropdownMenuItem>
             </DropdownMenuContent>
