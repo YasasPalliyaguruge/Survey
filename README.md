@@ -52,11 +52,11 @@ npm run build
 
 GitHub Actions performs a clean install, a production-dependency audit, linting and the production build for pull requests and pushes to `main`.
 
-The recruiter-readiness branch removed unused Firebase, Firestore, TanStack Table, React Router v5 type, `sql.js`, `@types/sql.js`, and Recharts dependencies and regenerated the lockfile through npm. The unused legacy SQLite abstraction and unused Recharts UI helper were also removed. A clean CI install now audits 441 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
+Recent maintenance removed unused Firebase, Firestore, TanStack Table, React Router v5 type, `sql.js`, `@types/sql.js`, and Recharts dependencies and regenerated the lockfile through npm. The unused legacy SQLite abstraction and unused Recharts UI helper were also removed. A clean CI install now audits 441 packages rather than 646. The production-only audit has no critical findings; its remaining findings are two moderate React Router advisories and one high advisory on the npm-distributed `xlsx` package.
 
-The Browserslist database was refreshed through its official lockfile updater, and the CI workflow now uses the current GitHub Actions runtimes while retaining Node 20 as the project validation target.
+The Browserslist database was refreshed through its official lockfile updater, and the CI workflow now uses current GitHub Actions runtimes while retaining Node 20 as the project validation target.
 
-Lint now completes with 0 errors and 7 non-blocking Fast Refresh warnings. Explicit `any` warnings were removed from the active shared Chart.js wrapper before the unused legacy SQLite path was deleted.
+Lint completes with 0 errors and 7 non-blocking Fast Refresh warnings. Explicit `any` warnings were removed from the active shared Chart.js wrapper before the unused legacy SQLite path was deleted.
 
 A major React Router migration is intentionally not being forced solely to clear the audit. This application uses browser/declarative routing with internal application destinations, so a major-version migration should be handled with separate navigation regression testing.
 
